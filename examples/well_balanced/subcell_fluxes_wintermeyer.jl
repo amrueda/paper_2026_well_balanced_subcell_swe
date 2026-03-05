@@ -167,9 +167,9 @@ const flux_nonconservative_wintermeyer_etal_local_symmetric = FluxNonConservativ
     b_rr = u_rr[end]
     b_ll = u_ll[end]
 
-    # Compute the jumps
-    h_avg = 0.5 * (h_ll + h_rr)
-    b_avg = 0.5 * (b_ll + b_rr)
+    # Compute the averages
+    h_avg =  (h_ll + h_rr)
+    b_avg =  (b_ll + b_rr)
     g = equations.gravity
 
     # Initialize flux vector
@@ -231,8 +231,8 @@ end
     b_ll = u_ll[end]
 
     # Compute the jumps
-    h_avg = 0.5 * (h_ll + h_rr)
-    b_avg = 0.5 * (b_ll + b_rr)
+    h_avg = (h_ll + h_rr)
+    b_avg = (b_ll + b_rr)
     g = equations.gravity
 
     # Initialize flux vector

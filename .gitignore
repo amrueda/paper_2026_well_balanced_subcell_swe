@@ -1,2 +1,7 @@
 out*/
 *.inp
+*.png
+*.pvd
+*.vtu
+*.h5
+p4est_data

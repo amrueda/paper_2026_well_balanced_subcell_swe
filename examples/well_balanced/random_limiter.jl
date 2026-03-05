@@ -55,9 +55,9 @@ function (limiter::SubcellLimiterIDP)(u::AbstractArray{<:Any, 4}, semi, dg::DGSE
                                       kwargs...)
     @unpack alpha = limiter.cache.subcell_limiter_coefficients
 
-    # Introduce a time dependent seed for reproducibility. Resetting the RNG with the same seed 
-    # value at each time step leads to error accumulation over time. Why?
-    rng = Xoshiro(Int(floor(1/dt * t)))
+    # Introduce a fixed seed for reproducibility
+    #rng = Xoshiro(Int(floor(1/dt * t)))
+    rng = Xoshiro(2026)
 
     for element in eachelement(dg, semi.cache)
         for j in eachnode(dg), i in 1:nnodes(dg)
