@@ -44,7 +44,7 @@ struct FluxNonConservativeWintermeyerLocalJump <:
        Trixi.FluxNonConservative{Trixi.NonConservativeJump()}
 end
 
-Trixi.n_nonconservative_terms(::FluxNonConservativeWintermeyerLocal) = 1
+Trixi.n_nonconservative_terms(::FluxNonConservativeWintermeyerLocalJump) = 1
 
 const flux_nonconservative_wintermeyer_etal_local_jump = FluxNonConservativeWintermeyerLocalJump()
 
@@ -137,6 +137,116 @@ end
         for j in eachlayer(equations)
             if j < i
                 f_hv += equations.rhos[j] / equations.rhos[i] * h_jump[j]
+            end
+        end
+        TrixiShallowWater.setlayer!(f, f_h, f_hv * normal_direction[1],
+                  f_hv * normal_direction[2], i, equations)
+    end
+
+    return SVector(f)
+end
+
+# Flux Wintermeyer in local-symmetric form
+
+# For `VolumeIntegralSubcellLimiting` the nonconservative flux is created as a callable struct to 
+# enable dispatch on the type of the nonconservative term (local / symmetric).
+struct FluxNonConservativeWintermeyerLocalSymmetric <:
+       Trixi.FluxNonConservative{Trixi.NonConservativeSymmetric()}
+end
+
+Trixi.n_nonconservative_terms(::FluxNonConservativeWintermeyerLocalSymmetric) = 1
+
+const flux_nonconservative_wintermeyer_etal_local_symmetric = FluxNonConservativeWintermeyerLocalSymmetric()
+
+@inline function (noncons_flux::FluxNonConservativeWintermeyerLocalSymmetric)(u_ll, u_rr,
+                                                                    normal_direction::AbstractVector,
+                                                                    equations::ShallowWaterMultiLayerEquations2D)
+    # Pull the necessary left and right state information
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+    b_rr = u_rr[end]
+    b_ll = u_ll[end]
+
+    # Compute the jumps
+    h_avg = 0.5 * (h_ll + h_rr)
+    b_avg = 0.5 * (b_ll + b_rr)
+    g = equations.gravity
+
+    # Initialize flux vector
+    f = zero(MVector{3 * nlayers(equations) + 1, real(equations)})
+
+    for i in eachlayer(equations)
+        f_h = zero(real(equations))
+        f_hv = g * h_ll[i] * b_avg
+        for j in eachlayer(equations)
+            if j < i
+                f_hv += g * h_ll[i] *
+                        (equations.rhos[j] / equations.rhos[i] * h_avg[j])
+            end
+        end
+        TrixiShallowWater.setlayer!(f, f_h, f_hv * normal_direction[1],
+                  f_hv * normal_direction[2], i, equations)
+    end
+
+    return SVector(f)
+end
+
+# Local part
+@inline function flux_nonconservative_wintermeyer_etal_local_symmetric(u_ll,
+                                                             normal_direction::AbstractVector,
+                                                             equations::ShallowWaterMultiLayerEquations2D,
+                                                             nonconservative_type::Trixi.NonConservativeLocal,
+                                                             nonconservative_term::Integer)
+    # Pull the necessary left and right state information
+    h_ll = waterheight(u_ll, equations)
+
+    g = equations.gravity
+
+    # Initialize flux vector
+    f = zero(Trixi.MVector{3 * nlayers(equations) + 1, real(equations)})
+
+    # Compute the local part of the nonconservative flux in each layer
+    # where f_hv[i] = g * h[i] * (b + ∑σ[k] * h[k])_x and σ[k] = ρ[k] / ρ[i] denotes the 
+    # density ratio of different layers
+    for i in eachlayer(equations)
+        f_h = zero(real(equations))
+        f_hv = g * h_ll[i]
+
+        TrixiShallowWater.setlayer!(f, f_h, f_hv, f_hv, i, equations)
+    end
+
+    return SVector(f)
+end
+
+# Symmetric part
+@inline function flux_nonconservative_wintermeyer_etal_local_symmetric(u_ll, u_rr,
+                                                             normal_direction::AbstractVector,
+                                                             equations::ShallowWaterMultiLayerEquations2D,
+                                                             nonconservative_type::Trixi.NonConservativeSymmetric,
+                                                             nonconservative_term::Integer)
+    # Pull the necessary left and right state information
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+    b_rr = u_rr[end]
+    b_ll = u_ll[end]
+
+    # Compute the jumps
+    h_avg = 0.5 * (h_ll + h_rr)
+    b_avg = 0.5 * (b_ll + b_rr)
+    g = equations.gravity
+
+    # Initialize flux vector
+    f = zero(MVector{3 * nlayers(equations) + 1, real(equations)})
+
+    # Compute the symmetric part of the nonconservative flux in each layer
+    # where f_hv[i] = g * h[i] * (b + ∑σ[k] * h[k])_x and σ[k] = ρ[k] / ρ[i] denotes the 
+    # density ratio of different layers
+    for i in eachlayer(equations)
+        f_h = zero(real(equations))
+        f_hv = b_avg
+        for j in eachlayer(equations)
+            if j < i
+                f_hv += equations.rhos[j] / equations.rhos[i] * h_avg[j]
             end
         end
         TrixiShallowWater.setlayer!(f, f_h, f_hv * normal_direction[1],

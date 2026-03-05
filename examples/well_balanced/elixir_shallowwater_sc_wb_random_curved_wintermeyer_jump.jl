@@ -20,8 +20,9 @@ function initial_condition_well_balanced(x, t, equations::ShallowWaterMultiLayer
     H = SVector(0.45)
     v1 = zero(H)
     v2 = zero(H)
-    b = (((x[1])^2 + (x[2])^2) < 0.04 ?
-         0.2 * (cos(4 * pi * sqrt((x[1])^2 + (x[2])^2)) + 1) : 0.0)
+    r = 0.4
+    b = (((x[1])^2 + (x[2])^2) < r^2 ?
+         0.2 * (cos(1/r * pi * sqrt((x[1])^2 + (x[2])^2)) + 1) : 0.0)
 
     return prim2cons(SVector(H..., v1..., v2..., b),
                      equations)
@@ -80,7 +81,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_integrals = (lake_at_rest_error,),
                                      analysis_polydeg = polydeg,)
 
-stepsize_callback = StepsizeCallback(cfl = 0.5)
+stepsize_callback = StepsizeCallback(cfl = 0.9)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
