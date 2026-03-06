@@ -1,3 +1,5 @@
+using StaticArrays
+
 function (dissipation::Trixi.DissipationLaxFriedrichsEntropyVariables)(u_ll, u_rr, orientation_or_normal_direction, equations::ShallowWaterMultiLayerEquations2D{4, 1, T}) where T
     λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
                                   equations)
