@@ -3,18 +3,12 @@ using OrdinaryDiffEqSSPRK
 using Trixi
 using TrixiShallowWater
 
-include("../well_balanced/es_dissipation_term.jl")
-
 ###############################################################################
 # Semidiscretization of the multilayer shallow water equations with one layer
 # to fallback to be the standard shallow water equations
 equations = ShallowWaterMultiLayerEquations2D(gravity = 9.812, H0 = 0.02,
-                                            #   threshold_desingularization = 1e-5, # for N = 7 (others unstable)
-                                              threshold_desingularization = 1e-6, # for N = 3
-                                            #   threshold_desingularization = 1e-8, # for N = 5
-                                            #   threshold_desingularization = 1.9e-5, # 1.8e-5 #1.75e-5 # for experimentation
-                                              rhos = 1.0
-                                             )
+                                              threshold_desingularization = 1e-8,
+                                              rhos = 1.0)
 
 """
     initial_condition_channel_obstacle(x, t, equations::ShallowWaterMultiLayerEquations2D)
@@ -87,11 +81,11 @@ function boundary_condition_outflow(u_inner, normal_direction::AbstractVector, x
     return flux, noncons_flux
 end
 
-boundary_conditions = (; Bottom => boundary_condition_slip_wall,
-                         Top => boundary_condition_slip_wall,
-                         Right => boundary_condition_outflow,
-                         Left => boundary_condition_slip_wall,
-                         Building => boundary_condition_slip_wall)
+boundary_conditions = (; Bottom = boundary_condition_slip_wall,
+                         Top = boundary_condition_slip_wall,
+                         Right = boundary_condition_outflow,
+                         Left = boundary_condition_slip_wall,
+                         Building = boundary_condition_slip_wall)
 
 # Manning friction source term
 @inline function source_terms_manning_friction(u, x, t, equations::ShallowWaterMultiLayerEquations2D)
@@ -119,45 +113,24 @@ end
 volume_flux = (flux_ersing_etal, flux_nonconservative_ersing_etal)
 
 surface_flux = (FluxHydrostaticReconstruction(FluxPlusDissipation(flux_ersing_etal,
-                                                                  DissipationLaxFriedrichsEntropyVariables()),
+                                                                  DissipationLocalLaxFriedrichs()),
                                               hydrostatic_reconstruction_ersing_etal),
                 FluxHydrostaticReconstruction(flux_nonconservative_ersing_etal,
                                               hydrostatic_reconstruction_ersing_etal))
 
-# result looks much better with increased resolution
-# basis = LobattoLegendreBasis(3)
-basis = LobattoLegendreBasis(4)
-# basis = LobattoLegendreBasis(5)
-# basis = LobattoLegendreBasis(6)
-# basis = LobattoLegendreBasis(7)
-# basis = LobattoLegendreBasis(8)
-# basis = LobattoLegendreBasis(9)
-# basis = LobattoLegendreBasis(10)
-# basis = LobattoLegendreBasis(11)
-# basis = LobattoLegendreBasis(12)
-# basis = LobattoLegendreBasis(13)
-# basis = LobattoLegendreBasis(15)
+polydeg = 5
+basis = LobattoLegendreBasis(polydeg)
 
-# TODO: these helper functions should probably dispatch on `equations::ShallowWaterMultiLayerEquations2D`
 # Cannot simply use `waterheight` here for multilayer equations.
 # Need a helper function to extract the relevant variable.
 @inline function main_waterheight(u, equations)
     return waterheight(u, equations)[1]
-    # TODO: Try x-momentum cubed and see what happens, p-norm of momenta with p=3
-    # return waterheight(u, equations)[1] + u[4]
-    # return 1.0 / waterheight(u, equations)[1]
-    # return 1.0 / sqrt(equations.gravity * waterheight(u, equations)[1]) # using `h`
-    # return 1.0 / sqrt(equations.gravity * (u[1] + u[4])) # using `h+b`
-    # return 1.0 / sqrt((u[1] + u[4])) # using `h+b`
-    # return sqrt(0.5 * equations.gravity * waterheight(u, equations)[1]^3)
-    # return sqrt(waterheight(u, equations)[1]^3)
 end
 
 indicator_sc = IndicatorHennemannGassnerShallowWater(equations, basis,
                                                      alpha_max = 0.5,
                                                      alpha_min = 0.001,
-                                                     alpha_smooth = true,
-                                                    #  variable = waterheight_pressure)
+                                                     alpha_smooth = false,
                                                      variable = main_waterheight)
 volume_integral = VolumeIntegralShockCapturingHG(indicator_sc;
                                                  volume_flux_dg = volume_flux,
@@ -171,7 +144,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 mesh_file = Trixi.download("https://gist.githubusercontent.com/andrewwinters5000/c3d9b3f5d506101ca0e57d4725aab416/raw/13feda6c2f7b38da664f1315baea1d1a55a0d5b2/channel_obstacle.inp",
                            joinpath(@__DIR__, "channel_obstacle.inp"))
 
-mesh = P4estMesh{2}(meshfile, periodicity = false)
+mesh = P4estMesh{2}(mesh_file)
 
 # Create the semi discretization object
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver;
@@ -214,9 +187,7 @@ function initial_condition_channel_obstacle_discontinuous(x, t, element_id,
     end
 
     # Reset the element values to the left of the gate opening to be the reservoir height
-    IDs = [42, 47, 242, 327] # These IDs are for the `channel_obsticle.inp` file
-    # IDs = [101, 106, 312, 427] # These IDs are for the `channel_obstacle_coarse.inp` file
-    # IDs = [108, 110, 188, 190, 692, 567] # These IDs are for the `channel_obstacle_refined.mesh` file
+    IDs = [101, 106, 312, 427] # These IDs are for the `channel_obstacle.inp` file
     if element_id in IDs
         H = 0.4
     end
@@ -246,15 +217,15 @@ end
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1000
+analysis_interval = 10000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(dt = 0.1, # 0.02 or 0.04, # the latter is for high-res comparison video
+save_solution = SaveSolutionCallback(dt = 0.2,
                                      save_initial_solution = true,
                                      save_final_solution = true,
-                                     output_directory = joinpath(@__DIR__, "out_N4"))
+                                     output_directory = joinpath(@__DIR__, "elementwise_N$polydeg"))
 
 stepsize_callback = StepsizeCallback(cfl = 0.25)
 
@@ -272,5 +243,4 @@ stage_limiter! = PositivityPreservingLimiterShallowWater(variables = (waterheigh
 
 sol = solve(ode, SSPRK33(stage_limiter!);
             ode_default_options()..., callback = callbacks,
-            adaptive = false, dt = 1.0
-            );
+            adaptive = false, dt = 1.0);

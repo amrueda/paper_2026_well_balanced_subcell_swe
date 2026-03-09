@@ -3,18 +3,13 @@ using OrdinaryDiffEqSSPRK
 using Trixi
 using TrixiShallowWater
 
-include("../well_balanced/es_dissipation_term.jl")
-
 ###############################################################################
 # Semidiscretization of the multilayer shallow water equations with one layer
 # to fallback to be the standard shallow water equations
 
 equations = ShallowWaterMultiLayerEquations2D(gravity = 9.812, H0 = 0.02,
-                                              threshold_desingularization = 1e-6, # used for N = 7
-                                            #   threshold_desingularization = 1e-8, # look decent at gauges N = 5
-                                              rhos = 1.0#,
-                                            #   threshold_limiter = 1e-13
-                                             )
+                                              threshold_desingularization = 1e-8,
+                                              rhos = 1.0)
 
 """
     initial_condition_channel_obstacle(x, t, equations::ShallowWaterMultiLayerEquations2D)
@@ -97,11 +92,11 @@ end
     return SVector(equations.threshold_limiter, u_inner[2], u_inner[3], u_inner[4])
 end
 
-boundary_conditions = (; Bottom => boundary_condition_slip_wall,
-                         Top => boundary_condition_slip_wall,
-                         Right => boundary_condition_outflow,
-                         Left => boundary_condition_slip_wall,
-                         Building => boundary_condition_slip_wall)
+boundary_conditions = (; Bottom = boundary_condition_slip_wall,
+                         Top = boundary_condition_slip_wall,
+                         Right = boundary_condition_outflow,
+                         Left = boundary_condition_slip_wall,
+                         Building = boundary_condition_slip_wall)
 
 # Manning friction source term
 @inline function source_terms_manning_friction(u, x, t, equations::ShallowWaterMultiLayerEquations2D)
@@ -128,16 +123,13 @@ end
 
 volume_flux = (flux_ersing_etal, flux_nonconservative_ersing_etal_local_jump)
 surface_flux = (FluxHydrostaticReconstruction(FluxPlusDissipation(flux_ersing_etal,
-                                                                  DissipationLaxFriedrichsEntropyVariables()),
-                                              hydrostatic_reconstruction_ersing_etal),
+                                                                  DissipationLocalLaxFriedrichs()),
+                                                                hydrostatic_reconstruction_ersing_etal),
                 FluxHydrostaticReconstruction(flux_nonconservative_ersing_etal_local_jump,
                                               hydrostatic_reconstruction_ersing_etal))
 
-basis = LobattoLegendreBasis(3)
-# basis = LobattoLegendreBasis(4)
-# basis = LobattoLegendreBasis(5)
-# basis = LobattoLegendreBasis(6)
-# basis = LobattoLegendreBasis(7)
+polydeg = 5
+basis = LobattoLegendreBasis(polydeg)
 
 limiter_idp = SubcellLimiterIDP(equations, basis;
                                 positivity_variables_cons = ["h1"],
@@ -154,7 +146,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 mesh_file = Trixi.download("https://gist.githubusercontent.com/andrewwinters5000/c3d9b3f5d506101ca0e57d4725aab416/raw/13feda6c2f7b38da664f1315baea1d1a55a0d5b2/channel_obstacle.inp",
                            joinpath(@__DIR__, "channel_obstacle.inp"))
 
-mesh = P4estMesh{2}(meshfile, periodicity=false)
+mesh = P4estMesh{2}(mesh_file)
 
 # Create the semi discretization object
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver;
@@ -198,9 +190,7 @@ function initial_condition_channel_obstacle_discontinuous(x, t, element_id,
     end
 
     # Reset the element values to the left of the gate opening to be the reservoir height
-    IDs = [42, 47, 242, 327] # These IDs are for the `channel_obstacle.inp` file
-    # IDs = [101, 106, 312, 427] # These IDs are for the `channel_obstacle_coarse.inp` file
-    # IDs = [108, 110, 188, 190, 692, 567] # These IDs are for the `channel_obstacle_refined.inp` file
+    IDs = [101, 106, 312, 427] # These IDs are for the `channel_obstacle.inp` file
     if element_id in IDs
         H = 0.4
     end
@@ -230,16 +220,16 @@ end
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1000
+analysis_interval = 10000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(dt = 0.1, # 0.02 or 0.04, # the latter is for high-res comparison video
+save_solution = SaveSolutionCallback(dt = 0.2,
                                      save_initial_solution = true,
                                      save_final_solution = true,
-                                     extra_node_variables = (:limiting_coefficient,))
-                                    #  output_directory = joinpath(@__DIR__, "out_node_limiting"))
+                                     extra_node_variables = (:limiting_coefficient,),
+                                     output_directory = joinpath(@__DIR__, "nodewise_N$polydeg"))
 
 stepsize_callback = StepsizeCallback(cfl = 0.25)
 
