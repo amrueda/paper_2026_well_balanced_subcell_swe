@@ -141,7 +141,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 ###############################################################################
 # Get the unstructured quad mesh from a file
 
-mesh_file = Trixi.download("https://gist.githubusercontent.com/andrewwinters5000/c3d9b3f5d506101ca0e57d4725aab416/raw/13feda6c2f7b38da664f1315baea1d1a55a0d5b2/channel_obstacle.inp",
+mesh_file = Trixi.download("https://gist.githubusercontent.com/andrewwinters5000/c3d9b3f5d506101ca0e57d4725aab416/raw/9359bee98c0c58ac348a3fddc6f6195ec26e26df/channel_obstacle.inp",
                            joinpath(@__DIR__, "channel_obstacle.inp"))
 
 mesh = P4estMesh{2}(mesh_file)
