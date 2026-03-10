@@ -1,5 +1,7 @@
 out*/
+*.csv
 *.inp
+*.pdf
 *.png
 *.pvd
 *.vtu

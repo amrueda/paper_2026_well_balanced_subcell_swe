@@ -231,7 +231,7 @@ save_solution = SaveSolutionCallback(dt = 0.2,
                                      extra_node_variables = (:limiting_coefficient,),
                                      output_directory = joinpath(@__DIR__, "nodewise_N$polydeg"))
 
-stepsize_callback = StepsizeCallback(cfl = 0.25)
+stepsize_callback = StepsizeCallback(cfl = 0.225)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

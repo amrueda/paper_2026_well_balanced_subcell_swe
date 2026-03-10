@@ -227,7 +227,7 @@ save_solution = SaveSolutionCallback(dt = 0.2,
                                      save_final_solution = true,
                                      output_directory = joinpath(@__DIR__, "elementwise_N$polydeg"))
 
-stepsize_callback = StepsizeCallback(cfl = 0.25)
+stepsize_callback = StepsizeCallback(cfl = 0.225)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
