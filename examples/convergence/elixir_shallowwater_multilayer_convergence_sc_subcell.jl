@@ -9,7 +9,7 @@ include("../well_balanced/es_dissipation_term.jl")
 # convergence. The initial condition and source term are created using the 
 # method of manufactured solutions (MMS) with the help of Symbolics.jl.
 
-equations = ShallowWaterMultiLayerEquations2D(gravity = 1.1,
+equations = ShallowWaterMultiLayerEquations2D(gravity = 9.81,
                                               rhos = (1.0))
 
 ### Create manufactured solution for method of manufactured solutions (MMS)
@@ -47,15 +47,21 @@ eqs = [
 du_exprs = expand_derivatives.(eqs)
 
 # Build functions
-du_funcs = build_function.(du_exprs, Ref(x_sym), t_sym, g, expression = Val(false))
-
-init_funcs = build_function.(init, Ref(x_sym), t_sym, expression = Val(false))
+const du_funcs = Tuple(build_function.(du_exprs, Ref(x_sym[1]), Ref(x_sym[2]), Ref(t_sym), Ref(g),
+                                       expression = Val(false)))
+const init_funcs = Tuple(build_function.(init, Ref(x_sym[1]), Ref(x_sym[2]), Ref(t_sym),
+                                         expression = Val(false)))
+const init_func_1, init_func_2, init_func_3, init_func_4 = init_funcs
+const du_func_1, du_func_2, du_func_3, du_func_4 = du_funcs
 
 # Trixi functions
 function initial_condition_convergence_mms(x,
                                        t,
                                        equations::ShallowWaterMultiLayerEquations2D)
-    prim = SVector{4, Float64}([f(x, t) for f in init_funcs]...)
+    prim = SVector{4, Float64}(init_func_1(x[1], x[2], t),
+                               init_func_2(x[1], x[2], t),
+                               init_func_3(x[1], x[2], t),
+                               init_func_4(x[1], x[2], t))
     return prim2cons(prim, equations)
 end
 
@@ -63,8 +69,10 @@ function source_terms_convergence_mms(u,
                                   x,
                                   t,
                                   equations::ShallowWaterMultiLayerEquations2D)
-    g = equations.gravity
-    return SVector{4, Float64}([f(x, t, g) for f in du_funcs]...)
+    return SVector{4, Float64}(du_func_1(x[1], x[2], t, equations.gravity),
+                               du_func_2(x[1], x[2], t, equations.gravity),
+                               du_func_3(x[1], x[2], t, equations.gravity),
+                               du_func_4(x[1], x[2], t, equations.gravity))
 end
 
 initial_condition = initial_condition_convergence_mms
@@ -91,10 +99,10 @@ function mapping_twist(xi, eta)
     return SVector(x, y)
 end
 
-# Create P4estMesh with 8 x 8 elements
+# Create P4estMesh with 4 x 4 elements
 trees_per_dimension = (2, 2)
 mesh = P4estMesh(trees_per_dimension, polydeg = 2,
-                 initial_refinement_level = 2,
+                 initial_refinement_level = 1,
                  periodicity = true,
                  mapping = mapping_twist)
 
