@@ -129,10 +129,7 @@ save_solution = SaveSolutionCallback(interval = 500,
                                      save_final_solution = true,
                                      extra_node_variables = (:limiting_coefficient,))
 
-stepsize_callback = StepsizeCallback(cfl = 0.7)
-
-callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution,
-                        stepsize_callback)
+callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution)
 
 ###############################################################################
 # run the simulation
@@ -140,6 +137,6 @@ callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, sav
 stage_callbacks = (SubcellLimiterIDPCorrection(),)
 
 sol = Trixi.solve(ode, Trixi.SimpleSSPRK33(stage_callbacks = stage_callbacks);
-                  dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+                  dt = 5e-4, # solve needs some value here but it will be overwritten by the stepsize_callback
                   ode_default_options()...,
                   callback = callbacks, adaptive = false);
