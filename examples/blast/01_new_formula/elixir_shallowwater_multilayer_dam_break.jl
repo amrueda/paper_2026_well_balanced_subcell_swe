@@ -7,8 +7,7 @@ using TrixiShallowWater
 # Semidiscretization of the multilayer shallow water equations for a circular dam break test with a
 # non-constant bottom topography function to test the subcell limiting
 
-equations = ShallowWaterMultiLayerEquations2D(gravity = 1.0,
-                                              rhos = (1.0))
+equations = ShallowWaterMultiLayerEquations2D(gravity = 1.0, rhos = (1.0))
 
 # Initial condition of a circular dam break with a sinusoidal bottom topography
 function initial_condition_blast_wave(x, t, equations::ShallowWaterMultiLayerEquations2D)
@@ -37,13 +36,17 @@ initial_condition = initial_condition_blast_wave
 polydeg = 4
 
 volume_flux = (flux_ersing_etal, flux_nonconservative_ersing_etal_local_jump)
-surface_flux = (FluxPlusDissipation(flux_ersing_etal, DissipationLaxFriedrichsEntropyVariables()), flux_nonconservative_ersing_etal_local_jump)
+surface_flux = (
+    FluxPlusDissipation(flux_ersing_etal, DissipationLaxFriedrichsEntropyVariables()),
+    flux_nonconservative_ersing_etal_local_jump,
+)
 basis = LobattoLegendreBasis(polydeg)
-limiter_idp = SubcellLimiterIDP(equations, basis;
-                                local_twosided_variables_cons = ["h1"],)
-volume_integral = VolumeIntegralSubcellLimiting(limiter_idp;
-                                                volume_flux_dg = volume_flux,
-                                                volume_flux_fv = surface_flux)
+limiter_idp = SubcellLimiterIDP(equations, basis; local_twosided_variables_cons = ["h1"])
+volume_integral = VolumeIntegralSubcellLimiting(
+    limiter_idp;
+    volume_flux_dg = volume_flux,
+    volume_flux_fv = surface_flux,
+)
 solver = DGSEM(basis, surface_flux, volume_integral)
 
 ###############################################################################
@@ -51,14 +54,22 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (4.0, 4.0)
-mesh = TreeMesh(coordinates_min, coordinates_max,
-                initial_refinement_level = 5,
-                n_cells_max = 10_000,
-                periodicity = true)
+mesh = TreeMesh(
+    coordinates_min,
+    coordinates_max,
+    initial_refinement_level = 5,
+    n_cells_max = 10_000,
+    periodicity = true,
+)
 
 # Create the semi discretization object
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver, 
-                                    boundary_conditions = boundary_condition_periodic)
+semi = SemidiscretizationHyperbolic(
+    mesh,
+    equations,
+    initial_condition,
+    solver,
+    boundary_conditions = boundary_condition_periodic,
+)
 ###############################################################################
 # ODE solver
 
@@ -71,24 +82,32 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 analysis_interval = 500
-analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
-                                     save_analysis = false,
-                                     extra_analysis_integrals = (energy_total,
-                                                                 energy_kinetic,
-                                                                 energy_internal))
+analysis_callback = AnalysisCallback(
+    semi,
+    interval = analysis_interval,
+    save_analysis = false,
+    extra_analysis_integrals = (energy_total, energy_kinetic, energy_internal),
+)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 20,
-                                     save_initial_solution = true,
-                                     save_final_solution = true,
-                                     output_directory = joinpath(@__DIR__, "out"),
-                                     extra_node_variables = (:limiting_coefficient,))
+save_solution = SaveSolutionCallback(
+    interval = 20,
+    save_initial_solution = true,
+    save_final_solution = true,
+    output_directory = joinpath(@__DIR__, "out"),
+    extra_node_variables = (:limiting_coefficient,),
+)
 
 stepsize_callback = StepsizeCallback(cfl = 0.4)
 
-callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution,
-                        stepsize_callback)
+callbacks = CallbackSet(
+    summary_callback,
+    analysis_callback,
+    alive_callback,
+    save_solution,
+    stepsize_callback,
+)
 
 ###############################################################################
 # run the simulation
@@ -96,7 +115,11 @@ callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, sav
 stage_callbacks = (SubcellLimiterIDPCorrection(),)
 
 # run the simulation
-sol = Trixi.solve(ode, Trixi.SimpleSSPRK33(stage_callbacks = stage_callbacks);
-                  dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
-                  ode_default_options()...,
-                  callback = callbacks, adaptive = false);
+sol = Trixi.solve(
+    ode,
+    Trixi.SimpleSSPRK33(stage_callbacks = stage_callbacks);
+    dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+    ode_default_options()...,
+    callback = callbacks,
+    adaptive = false,
+);
