@@ -6,4 +6,5 @@ out*/
 *.pvd
 *.vtu
 *.h5
+*.pdf
 p4est_data
