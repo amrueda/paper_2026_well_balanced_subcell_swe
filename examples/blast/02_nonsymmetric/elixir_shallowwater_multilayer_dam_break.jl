@@ -3,19 +3,35 @@ using OrdinaryDiffEqSSPRK, OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiShallowWater
 
-### Now define the new flux-differencing formula. Here we compute only the internal fluxes.
-### We will use pure FV at the left boundary for now (standard subcell limiting)...
-## We use Trixi.NonConservativeSymmetric() to dispatch SKEW-SYMMETRIC terms for now...
-####################################################################
+###############################################################################
+# Semidiscretization of the multilayer shallow water equations for a circular dam break test with a
+# non-constant bottom topography function to test the subcell limiting
 
+equations = ShallowWaterMultiLayerEquations2D(gravity = 1.0,
+                                              rhos = (1.0))
+
+
+### Now define the alternative flux-differencing formula that is non-symmetric
 # Since this is specific for this application, we dispatch with 
-# nonconservative_terms::True,
 # equations::ShallowWaterMultiLayerEquations2D
 #
+# Calculate the DG staggered volume fluxes `fhat` in subcell FV-form inside the element
+# (**with non-conservative terms in "local * jump" form**).
+#
+# See also `flux_differencing_kernel!`.
+#
+# The calculation of the non-conservative staggered "fluxes" requires non-conservative
+# terms that can be written as a product of local and jump contributions.
 @inline function Trixi.calcflux_fhat!(fhat1_L, fhat1_R, fhat2_L, fhat2_R, u,
-                                      mesh::TreeMesh{2}, nonconservative_terms::Trixi.True,
-                                      equations::ShallowWaterMultiLayerEquations2D,
-                                      volume_flux, dg::DGSEM, element, cache)
+                                ::Type{<:TreeMesh{2}}, nonconservative_terms::Trixi.True,
+                                equations::ShallowWaterMultiLayerEquations2D,
+                                volume_flux::Tuple{F_CONS, F_NONCONS}, dg::DGSEM,
+                                element,
+                                cache) where {
+                                              F_CONS <: Function,
+                                              F_NONCONS <:
+                                              Trixi.FluxNonConservative{Trixi.NonConservativeJump()}
+                                              }
     @unpack weights, derivative_split = dg.basis
     @unpack flux_temp_threaded, flux_nonconservative_temp_threaded = cache
     @unpack fhat_temp_threaded, fhat_nonconservative_temp_threaded, phi_threaded = cache
@@ -56,10 +72,10 @@ using TrixiShallowWater
                                              equations, dg, i, j)
             Trixi.multiply_add_to_node_vars!(flux_temp, derivative_split[ii, i], flux1,
                                              equations, dg, ii, j)
-            for noncons in 1:Trixi.n_nonconservative_terms(equations)
+            for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons)
                 # We multiply by 0.5 because that is done in other parts of Trixi
                 flux1_noncons = volume_flux_noncons(u_node, u_node_ii, 1, equations,
-                                                    Trixi.NonConservativeSymmetric(),
+                                                    Trixi.NonConservativeJump(),
                                                     noncons)
                 Trixi.multiply_add_to_node_vars!(flux_noncons_temp,
                                                  0.5f0 * derivative_split[i, ii],
@@ -85,7 +101,7 @@ using TrixiShallowWater
     # Compute local contribution to non-conservative flux
     for j in eachnode(dg), i in eachnode(dg)
         u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
-        for noncons in 1:Trixi.n_nonconservative_terms(equations)
+        for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons)
             Trixi.set_node_vars!(phi,
                                  volume_flux_noncons(u_local, 1, equations,
                                                      Trixi.NonConservativeLocal(), noncons),
@@ -102,7 +118,7 @@ using TrixiShallowWater
             fhat1_R[v, i + 1, j] = value
         end
         # Nonconservative part
-        for noncons in 1:Trixi.n_nonconservative_terms(equations),
+        for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons),
             v in eachvariable(equations)
 
             value = fhat_noncons_temp[v, noncons, i, j] +
@@ -119,9 +135,9 @@ using TrixiShallowWater
     for j in eachnode(dg)
         u_0 = Trixi.get_node_vars(u, equations, dg, 1, j, element)
         u_N = Trixi.get_node_vars(u, equations, dg, nnodes(dg), j, element)
-        for noncons in 1:Trixi.n_nonconservative_terms(equations)
+        for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons)
             phi_skew = volume_flux_noncons(u_0, u_N, 1, equations,
-                                           Trixi.NonConservativeSymmetric(), noncons)
+                                           Trixi.NonConservativeJump(), noncons)
 
             for v in eachvariable(equations)
                 fhat1_R[v, nnodes(dg), j] -= phi[v, noncons, nnodes(dg), j] * phi_skew[v] # The factor of 2 is missing cause Trixi multiplies all the non-cons terms with 0.5
@@ -142,10 +158,10 @@ using TrixiShallowWater
                                              equations, dg, i, j)
             Trixi.multiply_add_to_node_vars!(flux_temp, derivative_split[jj, j], flux2,
                                              equations, dg, i, jj)
-            for noncons in 1:Trixi.n_nonconservative_terms(equations)
+            for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons)
                 # We multiply by 0.5 because that is done in other parts of Trixi
                 flux2_noncons = volume_flux_noncons(u_node, u_node_jj, 2, equations,
-                                                    Trixi.NonConservativeSymmetric(),
+                                                    Trixi.NonConservativeJump(),
                                                     noncons)
                 Trixi.multiply_add_to_node_vars!(flux_noncons_temp,
                                                  0.5 * derivative_split[j, jj],
@@ -171,7 +187,7 @@ using TrixiShallowWater
     # Compute local contribution to non-conservative flux
     for j in eachnode(dg), i in eachnode(dg)
         u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
-        for noncons in 1:Trixi.n_nonconservative_terms(equations)
+        for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons)
             Trixi.set_node_vars!(phi,
                                  volume_flux_noncons(u_local, 2, equations,
                                                      Trixi.NonConservativeLocal(), noncons),
@@ -188,7 +204,7 @@ using TrixiShallowWater
             fhat2_R[v, i, j + 1] = value
         end
         # Nonconservative part
-        for noncons in 1:Trixi.n_nonconservative_terms(equations),
+        for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons),
             v in eachvariable(equations)
 
             value = fhat_noncons_temp[v, noncons, i, j] +
@@ -205,9 +221,9 @@ using TrixiShallowWater
     for i in eachnode(dg)
         u_0 = Trixi.get_node_vars(u, equations, dg, i, 1, element)
         u_N = Trixi.get_node_vars(u, equations, dg, i, nnodes(dg), element)
-        for noncons in 1:Trixi.n_nonconservative_terms(equations)
+        for noncons in 1:Trixi.n_nonconservative_terms(volume_flux_noncons)
             phi_skew = volume_flux_noncons(u_0, u_N, 2, equations,
-                                           Trixi.NonConservativeSymmetric(), noncons)
+                                           Trixi.NonConservativeJump(), noncons)
 
             for v in eachvariable(equations)
                 fhat2_R[v, i, nnodes(dg)] -= phi[v, noncons, i, nnodes(dg)] * phi_skew[v] # The factor of 2 is missing cause Trixi multiplies all the non-cons terms with 0.5
@@ -218,146 +234,84 @@ using TrixiShallowWater
     return nothing
 end
 
-################################
-# Define missing functions for ShallowWaterMultiLayerEquations2D
-Trixi.n_nonconservative_terms(::ShallowWaterMultiLayerEquations2D) = 1
-
-@inline function TrixiShallowWater.flux_nonconservative_ersing_etal(u_ll,
-                                                                    orientation::Integer,
-                                                                    equations::ShallowWaterMultiLayerEquations2D,
-                                                                    ::Trixi.NonConservativeLocal,
-                                                                    noncons)
-    # Pull the necessary left and right state information
-    h_ll = waterheight(u_ll, equations)
-
-    g = equations.gravity
-
-    # Initialize flux vector
-    f = zero(Trixi.MVector{3 * nlayers(equations) + 1, real(equations)})
-
-    # Compute the nonconservative flux in each layer
-    # where f_hv[i] = g * h[i] * (b + ∑h[k] + ∑σ[k] * h[k])_x and σ[k] = ρ[k] / ρ[i] denotes the 
-    # density ratio of different layers
-    for i in eachlayer(equations)
-        f_hv = g * h_ll[i]
-
-        if orientation == 1
-            setindex!(f, f_hv, i + nlayers(equations))
-        else # orientation == 2
-            setindex!(f, f_hv, i + 2 * nlayers(equations))
-        end
-    end
-
-    return SVector(f)
-end
-
-@inline function TrixiShallowWater.flux_nonconservative_ersing_etal(u_ll, u_rr,
-                                                                    orientation::Integer,
-                                                                    equations::ShallowWaterMultiLayerEquations2D,
-                                                                    ::Trixi.NonConservativeSymmetric,
-                                                                    noncons)
-    # Pull the necessary left and right state information
-    h_ll = waterheight(u_ll, equations)
-    h_rr = waterheight(u_rr, equations)
-    b_rr = u_rr[end]
-    b_ll = u_ll[end]
-
-    # Compute the jumps
-    h_jump = h_rr - h_ll
-    b_jump = b_rr - b_ll
-    g = equations.gravity
-
-    # Initialize flux vector
-    f = zero(Trixi.MVector{3 * nlayers(equations) + 1, real(equations)})
-
-    # Compute the nonconservative flux in each layer
-    # where f_hv[i] = g * h[i] * (b + ∑h[k] + ∑σ[k] * h[k])_x and σ[k] = ρ[k] / ρ[i] denotes the 
-    # density ratio of different layers
-    for i in eachlayer(equations)
-        f_hv = b_jump
-        for j in eachlayer(equations)
-            if j < i
-                f_hv += (equations.rhos[j] / equations.rhos[i] * h_jump[j])
-            else # (i<j<nlayers) nonconservative formulation of the pressure
-                f_hv += h_jump[j]
-            end
-        end
-
-        if orientation == 1
-            setindex!(f, f_hv, i + nlayers(equations))
-        else # orientation == 2
-            setindex!(f, f_hv, i + 2 * nlayers(equations))
-        end
-    end
-
-    return SVector(f)
-end
-
 ###############################################################################
-# Semidiscretization of the multilayer shallow water equations with a bottom topography function
-# to test well-balancedness
 
-equations = ShallowWaterMultiLayerEquations2D(gravity = 9.81, H0 = 0.45,
-                                              rhos = (1.0))
-basic_swe = Trixi.ShallowWaterEquations2D(gravity_constant = 9.81, H0 = 0.45) # Basic SWE to dispatch on Trixi functions
+# Initial condition of a circular dam break with a sinusoidal bottom topography
+function initial_condition_blast_wave(x, t, equations::ShallowWaterMultiLayerEquations2D)
+    # Set up polar coordinates
+    RealT = eltype(x)
+    inicenter = SVector(convert(RealT, 2.0), convert(RealT, 2.0))
+    x_norm = x[1] - inicenter[1]
+    y_norm = x[2] - inicenter[2]
+    r = sqrt(x_norm^2 + y_norm^2)
+    phi = atan(y_norm, x_norm)
+    sin_phi, cos_phi = sincos(phi)
 
-function initial_condition_convergence(x, t, equations::ShallowWaterMultiLayerEquations2D)
-    return Trixi.initial_condition_convergence_test(x, t, basic_swe)
+    # Calculate primitive variables5
+    H = r > 0.5f0 ? 2.0f0 : 4.0f0
+    v1 = r > 0.5f0 ? zero(RealT) : convert(RealT, 0.1882) * cos_phi
+    v2 = r > 0.5f0 ? zero(RealT) : convert(RealT, 0.1882) * sin_phi
+    b = 0.2 + 0.2 * cos(pi * (x[1] + x[2])) # by default assume there is no bottom topography
+
+    return prim2cons(SVector(H, v1, v2, b), equations)
 end
 
-function source_terms_convergence(u, x, t, equations::ShallowWaterMultiLayerEquations2D)
-    return Trixi.source_terms_convergence_test(u, x, t, basic_swe)
-end
-
-initial_condition = initial_condition_convergence
+initial_condition = initial_condition_blast_wave
 
 ###############################################################################
 # Get the DG approximation space
-
 polydeg = 4
-volume_flux = (flux_ersing_etal, TrixiShallowWater.flux_nonconservative_ersing_etal)
-surface_flux = (flux_ersing_etal, TrixiShallowWater.flux_nonconservative_ersing_etal)
+
+volume_flux = (flux_ersing_etal, flux_nonconservative_ersing_etal_local_jump)
+surface_flux = (FluxPlusDissipation(flux_ersing_etal, DissipationLaxFriedrichsEntropyVariables()), flux_nonconservative_ersing_etal_local_jump)
 basis = LobattoLegendreBasis(polydeg)
 limiter_idp = SubcellLimiterIDP(equations, basis;
-                                #positivity_variables_cons = ["h1"], # Don't do any limiting (pure DG)
-                                )
+                                local_twosided_variables_cons = ["h1"],)
 volume_integral = VolumeIntegralSubcellLimiting(limiter_idp;
                                                 volume_flux_dg = volume_flux,
                                                 volume_flux_fv = surface_flux)
 solver = DGSEM(basis, surface_flux, volume_integral)
 
 ###############################################################################
-# Get the TreeMesh and setup a periodic mesh
+# Get the TreeMesh and setup a non-periodic mesh with wall boundary conditions
 
 coordinates_min = (0.0, 0.0)
-coordinates_max = (sqrt(2.0), sqrt(2.0))
+coordinates_max = (4.0, 4.0)
 mesh = TreeMesh(coordinates_min, coordinates_max,
-                initial_refinement_level = 3,
+                initial_refinement_level = 5,
                 n_cells_max = 10_000,
                 periodicity = true)
 
 # Create the semi discretization object
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver, source_terms = source_terms_convergence)
-
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver, 
+                                    boundary_conditions = boundary_condition_periodic)
 ###############################################################################
 # ODE solver
 
-tspan = (0.0, 1.0)
+tspan = (0.0, 2.0)
 ode = semidiscretize(semi, tspan)
+
+###############################################################################
+# Callbacks
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 100
+analysis_interval = 500
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
-                                     analysis_polydeg = polydeg)
-
-stepsize_callback = StepsizeCallback(cfl = 0.5)
+                                     save_analysis = false,
+                                     extra_analysis_integrals = (energy_total,
+                                                                 energy_kinetic,
+                                                                 energy_internal))
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 1000,
+save_solution = SaveSolutionCallback(interval = 20,
                                      save_initial_solution = true,
-                                     save_final_solution = true)
+                                     save_final_solution = true,
+                                     output_directory = joinpath(@__DIR__, "out"),
+                                     extra_node_variables = (:limiting_coefficient,))
+
+stepsize_callback = StepsizeCallback(cfl = 0.4)
 
 callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution,
                         stepsize_callback)
@@ -367,7 +321,8 @@ callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, sav
 
 stage_callbacks = (SubcellLimiterIDPCorrection(),)
 
+# run the simulation
 sol = Trixi.solve(ode, Trixi.SimpleSSPRK33(stage_callbacks = stage_callbacks);
                   dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
                   ode_default_options()...,
-                  callback = callbacks);
+                  callback = callbacks, adaptive = false);
