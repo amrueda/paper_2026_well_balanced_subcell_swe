@@ -1,4 +1,3 @@
-using OrdinaryDiffEqSSPRK, OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiShallowWater
 using Symbolics
@@ -6,7 +5,7 @@ using Symbolics
 include("../well_balanced/es_dissipation_term.jl")
 ###############################################################################
 # Semidiscretization of the multilayer shallow water equations with a single layer to test
-# convergence. The initial condition and source term are created using the 
+# convergence. The initial condition and source term are created using the
 # method of manufactured solutions (MMS) with the help of Symbolics.jl.
 
 equations = ShallowWaterMultiLayerEquations2D(gravity = 9.81,
@@ -92,7 +91,7 @@ volume_integral = VolumeIntegralSubcellLimiting(limiter_idp;
 solver = DGSEM(basis, surface_flux, volume_integral)
 
 ###############################################################################
-# Affine type mapping to warp the [-1,1]^2 reference domain 
+# Affine type mapping to warp the [-1,1]^2 reference domain
 function mapping_twist(xi, eta)
     y = eta + 0.1 * sin(pi * xi) * cos(0.5*pi * eta)
     x = xi + 0.1 * sin(pi * eta)* cos(0.5*pi * xi)

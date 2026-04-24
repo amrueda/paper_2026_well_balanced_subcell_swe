@@ -1,5 +1,3 @@
-
-using OrdinaryDiffEqSSPRK, OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiShallowWater
 
@@ -11,7 +9,7 @@ equations = ShallowWaterMultiLayerEquations2D(gravity = 1.0, rhos = (1.0))
 
 
 ### Now define the alternative flux-differencing formula that is non-symmetric
-# Since this is specific for this application, we dispatch with 
+# Since this is specific for this application, we dispatch with
 # equations::ShallowWaterMultiLayerEquations2D
 #
 # Calculate the DG staggered volume fluxes `fhat` in subcell FV-form inside the element

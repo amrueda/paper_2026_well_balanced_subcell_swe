@@ -1,5 +1,3 @@
-
-using OrdinaryDiffEqSSPRK
 using Trixi
 using TrixiShallowWater
 
