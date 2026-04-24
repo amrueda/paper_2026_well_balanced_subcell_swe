@@ -158,9 +158,9 @@ ode = semidiscretize(semi, tspan)
 ###############################################################################
 # Workaround to set a discontinuous initial condition
 
-# alternative version of the initial condition used to setup a truly discontinuous water height
-# In contrast to the usual signature of initial conditions, this one get passed the
-# `element_id` explicitly. In particular, this initial conditions works as intended
+# alternative version of the initial condition used to set up a truly discontinuous water height
+# In contrast to the usual signature of initial conditions, this one gets passed the
+# `element_id` explicitly. In particular, this initial condition works as intended
 # only for the specific mesh loaded above!
 function initial_condition_channel_obstacle_discontinuous(x, t, element_id,
                                                           equations::ShallowWaterMultiLayerEquations2D)
