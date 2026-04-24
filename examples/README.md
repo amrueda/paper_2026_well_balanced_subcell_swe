@@ -105,5 +105,6 @@ A run generates an out folder containing the polynomial degree, e.g., `examples/
   ```
   Then to create Figures 6(b) and 7(b) start Paraview and load the statefile `sol_and_nodewise_coeff.pvsm`
 
-- To create the gauge comparisons in Figure 8 start Paraview and load the statefile `comparison_gauges.pvsm`.
+- To create the gauge comparison data needed to create Figure 8 start Paraview and load the statefile `comparison_gauges.pvsm`.
   Only one gauge point is plotted at a time and the user must manually change the sample point to one of those listed in Table 2.
+  The solution data over time can then be exported to a CSV file.
