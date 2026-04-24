@@ -1,9 +1,7 @@
 using Trixi
 using TrixiShallowWater
 using Random
-using StaticArrays
 
-include("es_dissipation_term.jl")
 include("random_limiter.jl")
 
 ###############################################################################
@@ -45,7 +43,7 @@ volume_integral = VolumeIntegralSubcellLimiting(limiter_idp;
 solver = DGSEM(basis, surface_flux, volume_integral)
 
 ###############################################################################
-# Unstructured mesh with 24 cells of the square domain [-1, 1]^n
+# Unstructured mesh with 96 cells of the square domain [-1, 1]^n
 mesh_file = Trixi.download("https://gist.githubusercontent.com/efaulhaber/63ff2ea224409e55ee8423b3a33e316a/raw/7db58af7446d1479753ae718930741c47a3b79b7/square_unstructured_2.inp",
                            joinpath(@__DIR__, "square_unstructured_2.inp"))
 

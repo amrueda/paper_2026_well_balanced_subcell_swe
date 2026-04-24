@@ -2,7 +2,6 @@ using Trixi
 using TrixiShallowWater
 using Symbolics
 
-include("../well_balanced/es_dissipation_term.jl")
 ###############################################################################
 # Semidiscretization of the multilayer shallow water equations with a single layer to test
 # convergence. The initial condition and source term are created using the

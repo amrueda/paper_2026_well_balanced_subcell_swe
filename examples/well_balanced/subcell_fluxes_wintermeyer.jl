@@ -1,3 +1,4 @@
+# This file contains the implementation of fluxes used for the well-balanced test in Section 4.2.
 
 @inline function TrixiShallowWater.flux_wintermeyer_etal(u_ll, u_rr,
                                   normal_direction::AbstractVector,
