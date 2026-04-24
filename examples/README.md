@@ -29,7 +29,7 @@ TODO
 
 # Circular dam break
 
-TODO
+TODO: Mention that 02 and 03 redefine `calc_fluxfhat!`
 
 # Dam break past an oblique object
 
