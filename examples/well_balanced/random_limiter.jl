@@ -56,7 +56,6 @@ function (limiter::SubcellLimiterIDP)(u::AbstractArray{<:Any, 4}, semi, dg::DGSE
     @unpack alpha = limiter.cache.subcell_limiter_coefficients
 
     # Introduce a fixed seed for reproducibility
-    #rng = Xoshiro(Int(floor(1/dt * t)))
     rng = Xoshiro(2026)
 
     for element in eachelement(dg, semi.cache)
