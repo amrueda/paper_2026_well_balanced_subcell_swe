@@ -18,7 +18,7 @@ function initial_condition_blast_wave(x, t, equations::ShallowWaterMultiLayerEqu
     phi = atan(y_norm, x_norm)
     sin_phi, cos_phi = sincos(phi)
 
-    # Calculate primitive variables5
+    # Calculate primitive variables
     H = r > 0.5f0 ? 2.0f0 : 4.0f0
     v1 = r > 0.5f0 ? zero(RealT) : convert(RealT, 0.1882) * cos_phi
     v2 = r > 0.5f0 ? zero(RealT) : convert(RealT, 0.1882) * sin_phi

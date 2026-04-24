@@ -33,7 +33,7 @@ use the implementations provided here, please **also** cite this repository as
 ## Abstract
 
 High-order discontinuous Galerkin (DG) methods equipped with subcell finite-volume (FV) limiters provide an efficient framework for the simulation of nonlinear hyperbolic balance laws featuring shocks and complex flow structures.
-However, for systems with non-conservative terms, the design of hybrid DG/FV schemes that simultaneously guaranty high-order accuracy for smooth solutions, robustness, and well-balancedness remains challenging.
+However, for systems with non-conservative terms, the design of hybrid DG/FV schemes that simultaneously guarantee high-order accuracy for smooth solutions, robustness, and well-balancedness remains challenging.
 In particular, for the shallow water equations with variable bottom topography, standard flux-differencing formulations combined with node-wise subcell limiting generally destroy the well-balanced property, even if both the underlying DG and FV discretizations are individually well-balanced.
 
 In this work, we propose a novel flux-differencing formulation for non-conservative systems that enables node-wise subcell limiting while preserving well-balanced steady states exactly.
