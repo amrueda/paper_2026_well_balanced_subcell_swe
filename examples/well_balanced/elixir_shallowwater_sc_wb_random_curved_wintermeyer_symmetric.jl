@@ -86,7 +86,8 @@ alive_callback = AliveCallback(analysis_interval = analysis_interval)
 save_solution = SaveSolutionCallback(dt = 1.0,
                                      save_initial_solution = true,
                                      save_final_solution = true,
-                                     extra_node_variables = (:limiting_coefficient,))
+                                     extra_node_variables = (:limiting_coefficient,),
+                                     output_directory = joinpath(@__DIR__, "results_wintermeyer_symmetric"))
 
 callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution,
                         stepsize_callback)
