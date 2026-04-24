@@ -11,7 +11,7 @@ include("random_limiter.jl")
 equations = ShallowWaterMultiLayerEquations2D(gravity = 9.81, H0 = 0.45,
                                               rhos = (1.0))
 
-# An initial condition with constant total water height, zero velocities and a smooth bottom 
+# An initial condition with constant total water height, zero velocities and a smooth bottom
 # topography to test well-balancedness
 function initial_condition_well_balanced(x, t, equations::ShallowWaterMultiLayerEquations2D)
     H = SVector(0.45)
@@ -44,8 +44,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 
 ###############################################################################
 # Unstructured mesh with 96 cells of the square domain [-1, 1]^n
-mesh_file = Trixi.download("https://gist.githubusercontent.com/efaulhaber/63ff2ea224409e55ee8423b3a33e316a/raw/7db58af7446d1479753ae718930741c47a3b79b7/square_unstructured_2.inp",
-                           joinpath(@__DIR__, "square_unstructured_2.inp"))
+mesh_file = joinpath(@__DIR__, "square_unstructured_2.inp")
 
 # Affine type mapping to take the [-1,1]^2 domain from the mesh file
 # and warp it as described in https://arxiv.org/abs/2012.12040
@@ -72,7 +71,7 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 10
+analysis_interval = 1000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:conservation_error,),
                                      extra_analysis_integrals = (lake_at_rest_error,),
