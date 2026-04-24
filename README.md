@@ -55,7 +55,7 @@ The results were obtained using Julia v1.XXXX, [this version of Trixi.jl](https:
 
 First, you need to download this repository, e.g., by cloning it with `git`
 or by downloading an archive via the GitHub interface. Then, you need to start
-Julia in the `code` directory of this repository and follow the instructions
+Julia in the `examples` directory of this repository and follow the instructions
 described in the `README.md` file therein.
 
 ## Authors
