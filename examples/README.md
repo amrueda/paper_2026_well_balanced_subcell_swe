@@ -3,7 +3,7 @@
 This directory contains all source code required to reproduce the numerical experiments presented in the paper.
 The instructions below assume that the Julia REPL has been started in the main directory of this reproducibility repository.
 
-All the simulations were visualized in ParaView where the HDF5 TrixiShallowWater.jl output
+All the simulations were visualized in ParaView where the HDF5 `TrixiShallowWater.jl` output
 files were converted using `Trixi2Vtk.jl`.
 
 # Convergence test
