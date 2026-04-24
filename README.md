@@ -50,13 +50,28 @@ Although this work focuses on the shallow water equations, the well-balanced hyb
 
 To reproduce the numerical experiments presented in this article, you need
 to install [Julia](https://julialang.org/). The numerical experiments presented
-in this article were performed using Julia v1.???.
-The results were obtained using Julia v1.XXXX, [this version of Trixi.jl](https://github.com/trixi-framework/Trixi.jl), and [this version of TrixiShallowWater.jl](https://github.com/trixi-framework/Trixi.jl).
+in this article were performed using Julia v1.11.3.
 
 First, you need to download this repository, e.g., by cloning it with `git`
-or by downloading an archive via the GitHub interface. Then, you need to start
-Julia in the `examples` directory of this repository and follow the instructions
-described in the `README.md` file therein.
+or by downloading an archive via the GitHub interface.
+
+Then to install the necessary packages from the `Project.toml`
+the numerical results described in the article.
+Navigate in a terminal to the particular example folder of interest.
+Then, you need to start Julia in this directory and follow the instructions
+described below.
+```bash
+cd path/to/repo
+julia --project=. -e 'import Pkg; Pkg.instantiate()'
+julia --project=.
+```
+Once instantiated that particular example set can be run.
+
+Then, you need to start Julia from the home directory
+```bash
+julia --project=.
+```
+and follow the instructions described in the file `examples/README.md`.
 
 ## Authors
 
