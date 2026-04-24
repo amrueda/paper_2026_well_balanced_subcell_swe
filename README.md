@@ -6,7 +6,7 @@
 This repository contains information and code to reproduce the results presented in the
 article
 ```bibtex
-@online{oeffner2026stochasic,
+@online{rueda2026subcell,
   title={Well-balanced subcell limiting for discontinuous {G}alerkin discretizations of the shallow-water equations},
   author={Rueda-Ram\´{i}rez, Andr\´{e}s M and Ersing, Patrick and Winters, Andrew R and Gassner, Gregor J},
   year={2026},
