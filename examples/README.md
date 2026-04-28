@@ -54,14 +54,9 @@ The circular dam break that generates the result in Figure 4(b)
 include(joinpath("examples", "circular_dam_break", "02_nonsymmetric", "elixir_shallowwater_multilayer_dam_break.jl"));
 ```
 
-The circular dam break that generates the result in Figure 4(c)
-```julia
-include(joinpath("examples", "circular_dam_break", "03_symmetrized", "elixir_shallowwater_multilayer_dam_break.jl"));
-```
-
 > [!WARNING]
-> If one runs either the `examples/circular_dam_break/02_nonsymmetric` or `examples/circular_dam_break/03_nonsymmetric` test cases, the Julia session should be ended and restated.
-> This is because these elixirs redefine the function `calcflux_fhat!`.
+> If one runs the `examples/circular_dam_break/02_nonsymmetric/elixir_shallowwater_multilayer_dam_break.jl` test case, the Julia session should be ended and restated before running other test cases.
+> This is because that elixir redefines the function `calcflux_fhat!`.
 
 After a run, use a command like the following to create output `.vtu` files
 ```julia
@@ -105,6 +100,16 @@ A run generates an out folder containing the polynomial degree, e.g., `examples/
   ```
   Then to create Figures 6(b) and 7(b) start Paraview and load the statefile `sol_and_nodewise_coeff.pvsm`
 
-- To create the gauge comparison data needed to create Figure 8 start Paraview and load the statefile `comparison_gauges.pvsm`.
-  Only one gauge point is plotted at a time and the user must manually change the sample point to one of those listed in Table 2.
-  The solution data over time can then be exported to a CSV file.
+- For the gauge comparison data needed to create Figure 8 start Paraview and load the statefile `comparison_gauges.pvsm`.
+  The data at a particular gauge point is extracted from the solution checkin files created by `Trixi2Vtk` with ParaView's `Probe Location` filter.
+  Only one gauge point is plotted at a time and the user must manually change the particular point for which data is plotted under the `Sphere Parameters` of each `Probe Location` filter.
+  The gauge point locations are given in Table 2, but the four examined in Figure 8 are written below for convenience:
+
+  - G2: (10.35, 1.2)
+  - G4: (11.7, 1.0)
+  - G5: (12.9, 2.1)
+  - G6: (5.83, 2.9)
+
+  To export the gauge point data as a `.csv` file, select the desired `Probe Location` in the Pipeline Browser of ParaView, go to File > Save Data and chose an appropriate file name, e.g., `nodewise_G3_N5.csv` for the node-wise limiting data at gauge point G3 with `polydeg = 5`.
+  After all the CSV files are created run the plot script `make_gauge_plots.jl` to create the seperate figures for the gauge plot comparisons.
+  This plot script uses experimental data contained in the file `ref_building_gauges_h.txt` that is also available as a supplement from Soares-Frazão and Zech (2007) [DOI: 10.1080/00221686.2007.9521830](https://doi.org/10.1080/00221686.2007.9521830).
