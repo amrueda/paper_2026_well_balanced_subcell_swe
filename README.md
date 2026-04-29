@@ -75,7 +75,7 @@ and follow the instructions described in the file `examples/README.md`.
 
 ## Authors
 
-- Andrés M. Rueda-Ramírez ( Universidad Politécnica de Madrid, Spain)
+- Andrés M. Rueda-Ramírez (Universidad Politécnica de Madrid, Spain)
 - Patrick Ersing (Linköping University, Sweden)
 - Andrew R. Winters (Linköping University, Sweden)
 - Gregor J. Gassner (University of Cologne, Germany)
