@@ -1,7 +1,7 @@
 # Well-balanced subcell limiting for discontinuous Galerkin discretizations of the shallow-water equations
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
-<!-- [![DOI](https://zenodo.org/badge/1167359110.svg)](https://doi.org/10.5281/zenodo.19366724) -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19913123.svg)](https://doi.org/10.5281/zenodo.19913123)
 
 This repository contains information and code to reproduce the results presented in the
 article
@@ -25,8 +25,8 @@ use the implementations provided here, please **also** cite this repository as
          "{W}ell-balanced subcell limiting for discontinuous {G}alerkin discretizations of the shallow-water equations"},
   author={Rueda-Ram\´{i}rez, Andr\´{e}s M and Ersing, Patrick and Winters, Andrew R and Gassner, Gregor J},
   year={2026},
-  howpublished={\url{TODO}},
-  doi={TODO}
+  howpublished={\url{https://github.com/amrueda/paper_2026_well_balanced_subcell_swe}},
+  doi={10.5281/zenodo.19913123}
 }
 ```
 
