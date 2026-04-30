@@ -8,7 +8,7 @@ article
 ```bibtex
 @online{rueda2026subcell,
   title={Well-balanced subcell limiting for discontinuous {G}alerkin discretizations of the shallow-water equations},
-  author={Rueda-Ram\´{i}rez, Andr\´{e}s M and Ersing, Patrick and Winters, Andrew R and Gassner, Gregor J},
+  author={Rueda-Ram\'{i}rez, Andr\'{e}s M and Ersing, Patrick and Winters, Andrew R and Gassner, Gregor J},
   year={2026},
   month={TODO},
   eprint={TODO},
@@ -23,7 +23,7 @@ use the implementations provided here, please **also** cite this repository as
 @misc{rueda2026numericalRepro,
   title={Reproducibility repository for
          "{W}ell-balanced subcell limiting for discontinuous {G}alerkin discretizations of the shallow-water equations"},
-  author={Rueda-Ram\´{i}rez, Andr\´{e}s M and Ersing, Patrick and Winters, Andrew R and Gassner, Gregor J},
+  author={Rueda-Ram\'{i}rez, Andr\'{e}s M and Ersing, Patrick and Winters, Andrew R and Gassner, Gregor J},
   year={2026},
   howpublished={\url{https://github.com/amrueda/paper_2026_well_balanced_subcell_swe}},
   doi={10.5281/zenodo.19913123}
