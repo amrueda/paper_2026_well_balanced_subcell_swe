@@ -8,10 +8,10 @@ files were converted using `Trixi2Vtk.jl`.
 
 # Convergence test
 
-Run the full convergence test and output a table of EOCs like in the article
+Run the full convergence test and output a table of the L1, L2, and Linf errors and EOCs like in the article
 ```julia
-include Trixi
-convergence_test(joinpath("examples", "convergence", "elixir_shallowwater_multilayer_convergence_sc_subcell.jl"), 4);
+include(joinpath("examples", "convergence", "convergence_test_l1.jl"))
+convergence_test_l1(joinpath("examples", "convergence", "elixir_shallowwater_multilayer_convergence_sc_subcell.jl"), 4);
 ```
 
 # Well-balancedness test

@@ -23,9 +23,9 @@ Dt, Dx, Dy = Differential(t_sym), Differential(x_sym[1]), Differential(x_sym[2])
 # Primitive Variables
 ω = pi * 1.0
 H = 4.0 + 0.2 * cos(ω * x_sym[1] + t_sym) + 0.2 * cos(ω * x_sym[2] + t_sym)
-v1 = 0.5
-v2 = 0.5
-b = 1.0 + 0.2 * cos(ω * x_sym[1]) + 0.2 * cos(ω * x_sym[2])
+v1 = 0.5 + 0.2 * sin(ω * x_sym[1] + t_sym) + 0.1 * cos(ω * x_sym[2])
+v2 = 0.3 + 0.1 * sin(ω * x_sym[2] + t_sym) + 0.1 * cos(ω * x_sym[1])
+b = 1.0 + 0.2 * sin(ω * x_sym[1]) + 0.2 * sin(ω * x_sym[2])
 h = H - b
 
 init = [H, v1, v2, b]
@@ -127,7 +127,21 @@ save_solution = SaveSolutionCallback(interval = 500,
                                      save_final_solution = true,
                                      extra_node_variables = (:limiting_coefficient,))
 
-callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution)
+# Track the maximum CFL number realized by the fixed time step `dt` during the run.
+# The CFL number is computed as `dt / dt_max`, where `dt_max` is the time step that the
+# `StepsizeCallback` would choose with `cfl = 1` for the current solution.
+cfl_max = Ref(0.0)
+function track_cfl!(integrator)
+    dt_cfl_one = Trixi.calculate_dt(integrator.u, integrator.t, 1.0, 0.0, integrator.p)
+    cfl_max[] = max(cfl_max[], integrator.dt / dt_cfl_one)
+    Trixi.u_modified!(integrator, false)
+    return nothing
+end
+cfl_callback = Trixi.DiscreteCallback((u, t, integrator) -> true, track_cfl!,
+                                      save_positions = (false, false))
+
+callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution,
+                        cfl_callback)
 
 ###############################################################################
 # run the simulation
@@ -138,3 +152,5 @@ sol = Trixi.solve(ode, Trixi.SimpleSSPRK33(stage_callbacks = stage_callbacks);
                   dt = 5e-4, # solve needs some value here but it will be overwritten by the stepsize_callback
                   ode_default_options()...,
                   callback = callbacks, adaptive = false);
+
+println("Maximum CFL number during the run: ", cfl_max[])
