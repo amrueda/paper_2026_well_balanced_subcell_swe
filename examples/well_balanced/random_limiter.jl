@@ -1,6 +1,8 @@
 ####################################################################
 # Define an IDP limiter that selects a random limiting factor for each
-# point of the domain to test well-balancedness
+# point of the domain to test well-balancedness. 
+# For elements with water height below a certain threshold, the limiter will switch
+# to pure FV to ensure the well-balanced property is preserved.
 
 """
     SubcellLimiterRandomIDPCorrection()
@@ -58,12 +60,26 @@ function (limiter::SubcellLimiterIDP)(u::AbstractArray{<:Any, 4}, semi, dg::DGSE
     # Introduce a fixed seed for reproducibility
     rng = Xoshiro(2026)
 
-    for element in eachelement(dg, semi.cache)
+    Trixi.@threaded for element in eachelement(dg, semi.cache)
+        indicator_wet = 1 # Indicator for dry nodes in the element (1 = wet, 0 = dry)
+
         for j in eachnode(dg), i in 1:nnodes(dg)
             alpha[i, j, element] = rand(rng)   # Set alpha as a random number in [0, 1]
+
+            # Check for dry nodes in the element
+            h = waterheight(get_node_vars(u, equations, dg, i, j, element), equations)
+
+            # Set indicator to FV if water height is below the threshold
+            if minimum(h) <= equations.threshold_partially_wet
+                indicator_wet = 0
+            end
+        end
+
+        if indicator_wet == 0   # element is dry
+            alpha[:, :, element] .= one(eltype(alpha))
         end
     end
-
+    
     return nothing
 end
 
