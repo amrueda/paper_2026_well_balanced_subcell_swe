@@ -11,13 +11,13 @@ include("random_limiter.jl")
 ###############################################################################
 # Semidiscretization of the shallow water equations with a bottom topography function
 # to test well-balancedness including dry states and a perturbation.
-equations = ShallowWaterMultiLayerEquations2D(gravity = 9.81, H0 = 0.4503021589546197,
+equations = ShallowWaterMultiLayerEquations2D(gravity = 9.81, H0 = 0.30018951616469747,
                                               rhos = (1.0))
 
 # An initial condition with for a lake at rest steady state with a smooth bottom
 # topography including dry states to test well-balancedness
 function initial_condition_well_balanced_wet_dry(x, t, equations::ShallowWaterMultiLayerEquations2D)
-    H = 0.45
+    H = 0.3
     v1 = zero(H)
     v2 = zero(H)
     
@@ -28,7 +28,7 @@ function initial_condition_well_balanced_wet_dry(x, t, equations::ShallowWaterMu
     # Add a small perturbation to the water height to test the well-balanced property with a perturbation.
     r_H = 0.2
     if (((x[1] + 0.5)^2 + (x[2])^2) < r_H^2)
-        H += 1e-2
+        H += 1e-2 * (cos(1/r_H * pi * sqrt((x[1] + 0.5)^2 + (x[2])^2)) + 1)
     end
 
     # Clip the initialization to avoid negative water heights and division by zero
@@ -84,7 +84,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver, 
 ###############################################################################
 # ODE solver
 
-tspan = (0.0, 100.0)
+tspan = (0.0, 150.0)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
@@ -96,7 +96,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      save_analysis = true,
                                      output_directory = joinpath(@__DIR__, "results_perturbation"))
 
-stepsize_callback = StepsizeCallback(cfl = 0.5)
+stepsize_callback = StepsizeCallback(cfl = 0.9)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
@@ -131,7 +131,7 @@ df = DataFrame(mat,vec(head))
 with_theme(theme_latexfonts()) do
     # Setup figure
     f = Figure(size = (800, 350))
-    ax = Axis(f[1,1], xlabel = L"t", ylabel = L"\frac{1}{\Omega}\int_{\Omega} H0(x) - H(x,t) dx", yscale = log10)
+    ax = Axis(f[1,1], xlabel = L"t", ylabel = L"\frac{1}{|\Omega|}||E_{WB}||_1", yscale = log10)
 
     # Plot data
     lines!(ax, df.time[2:end], df.var"|H0-(h+b)|"[2:end])
